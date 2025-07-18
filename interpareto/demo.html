@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pareto Analysis Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <style>
+        body {
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            margin: 0;
+            padding: 5px;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 2px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .chart-container {
+            background: white;
+            border: 1px solid #e0e0e0;
+        }
+
+        .controls-container {
+            background: white;
+            padding: 2px 6px 2px 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e0e0e0;
+            margin-top: 15px;
+        }
+
+        .data-type-container {
+            display: flex;
+            flex-direction: column;
+
+            margin-left: 10px;
+        }
+
+        .data-type-label {
+            font-size: 11px;
+            color: #666;
+            font-weight: 500;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-type-value {
+            font-weight: 600;
+            font-size: 14px;
+            color: #4285f4;
+            padding: 6px 10px;
+            background-color: #f0f7ff;
+            border: 1px solid #d6e4ff;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .data-selector {
+            position: relative;
+            min-width: 200px;
+        }
+
+        .data-selector select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            background-color: white;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-selector select:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+
+        .data-selector select:hover {
+            border-color: #bbb;
+        }
+
+        .data-selector option {
+            padding: 10px;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .data-selector option:hover {
+            background-color: #f0f7ff !important;
+        }
+
+        .data-selector option:checked {
+            background-color: #a0a0a0;
+            color: white;
+            font-weight: 500;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+        }
+
+        .dashboard-title {
+            text-align: center;
+            margin: 0;
+            padding: 5px 0 0px 0px;
+            color: #333;
+            font-size: 12pt;
+            font-weight: 500;
+        }
+
+        .warn {
+            font-size: 11px;
+            font-weight: 400;
+            line-height: 1.5;
+            position: relative;
+            padding: 15px 29px 15px 15px;
+            margin-top: 0;
+            background: #fef4f6;
+            color: #f0506e;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+
+<body>
+ <!--[min_content-->
+    <div class="container">
+     
+        <h3 class="dashboard-title">
+            <!--[title-->
+Pareto dashboard
+<!--title]-->
+        </h3>
+        <div class="controls-container">
+            <div class="controls-row">
+                <small style="text-align: right; color: rgb(211, 211, 211); font-size: 9pt">Current <br />
+                    settings</small>
+                <div class="data-type-container">
+                    <span id="currentDataType" class="data-type-value">Value</span>
+                </div>
+            </div>
+            <div class="data-selector">
+                <select id="dataTypeSelect">
+                    <!-- Options will be generated dynamically -->
+                </select>
+            </div>
+        </div>
+        <div>
+            <!--[warn-->
+<p class='warn'>Dropped column '<b>Range to drop</b>': looks like index</br>Column '<b>uniform_0_to_1000</b>': 0 NaNs, (36 negative values, 0 zeros)</p>
+<!--warn]-->
+        </div>
+        <div class="chart-container">
+            <div id="visualizationChart"></div>
+        </div>
+    </div>
+
+    <!-- Rest of the script remains unchanged -->
+    <script>
+        (function() {
+            // Language constants
+            const suffixEng = ["", "k", "M", "B", "T"];
+
+            // Human readable number formatter
+            const HumanReadable = function(n, places) {
+                if (!isNumeric(n)) {
+                    return n;
+                }
+                if (typeof places === "undefined") {
+                    places = 2;
+                }
+
+                if (Math.abs(n) < 1) {
+                    return n.toFixed(3);
+                }
+                if (n <= 0) {
+                    return n.toFixed(2);
+                }
+                if (n < 999 && places === 0) {
+                    return n.toFixed(0);
+                }
+
+                const base = 10;
+                const step = 3;
+                let magnitude;
+
+                if (n === 0) {
+                    magnitude = 0;
+                } else {
+                    magnitude = Math.log(n) / Math.log(base);
+                }
+
+                const order = Math.min(
+                    parseInt(Math.round(magnitude) / step),
+                    suffixEng.length - 1,
+                );
+
+                const f_num = parseFloat(n) / Math.pow(base, order * step);
+                const res = f_num.toFixed(places);
+                return [res, suffixEng[order]].join("");
+            };
+
+            // Helper function to check if value is numeric
+            function isNumeric(n) {
+                return !isNaN(parseFloat(n)) && isFinite(n);
+            }
+
+            // Configuration
+            const config = {
+                text: {
+                    title: "Pareto Analysis",
+                    yAxis: "Cases",
+                    secondaryXAxis: "Cumulative percentage",
+                    pageTitle: "Pareto Analysis Dashboard",
+                    lineName: "Cumulative %",
+                    thresholdName: "80% threshold",
+                    interceptName: "80% at {percent}% of cases",
+                    interceptAnnotation: "{percent}% of cases\nmake 80% of value",
+                    interceptHover: "80/20 rule\nTop {categories} cases ({percent}%)\nMake {exactPercent}% of total value",
+                    hoverLine: "{category}<br>Cumulative: {cumulative}%",
+                },
+                colors: {
+                    bar: "#3366cc",
+                    line: "#dc3912",
+                    threshold: "#ff9900",
+                    horizontal80: "#109618",
+                    hoverLine: "#333333",
+                    tooltipBg: "#ffffff",
+                    tooltipBorder: "#333333",
+                },
+                layout: {
+                    height: 900,
+                    margins: {
+                        l: 15,
+                        r: 30,
+                        t: 60,
+                        b: 80,
+                    },
+                },
+            };
+
+            // Column definitions
+            const columnNames = /*[col_names*/
+["index","smoothed_pareto_A","smoothed_pareto_B","smoothed_pareto_C","normal_mean_30_std_5","uniform_0_to_1000","poisson_lambda_15","beta_scaled_0_to_100","binomial_n100_p0.2","zipf_a1.5_clipped","gamma_shape_2_scale_20"]
+/*col_names]*/
+            const LongColNames = columnNames;
+            const xAxisTitles = columnNames;
+
+            const hoverTemplates = columnNames.map((colName, index) => {
+                if (index === 0) return "";
+                const displayName = LongColNames[index] || colName;
+                return `{category}<br>${displayName}: {value}<br>Share: {percentage}%`;
+            });
+
+            const defaultData = /*[p_data*/
+[["0",11.16,292.94,106.31,28.29,1.47,10.0,26.47,17.0,1.0,41.92],["1",3.32,264.95,104.28,31.35,-3.09,16.0,32.43,19.0,13.0,59.14],["2",0.53,52.83,140.95,29.89,-0.74,10.0,34.7,17.0,1.0,29.2],["3",1.51,170.45,177.58,31.24,0.45,12.0,27.54,14.0,1.0,41.17],["4",6.07,318.1,113.39,28.41,4.69,13.0,61.3,21.0,1.0,47.69],["5",43.31,3975.72,1618.72,29.4,3.56,10.0,19.42,22.0,1.0,56.14],["6",11.65,163.67,82.92,30.01,0.34,19.0,11.4,21.0,1.0,38.23],["7",3.99,125.03,85.01,30.05,9.8,12.0,11.89,20.0,1.0,9.81],["8",28.32,71.68,209.04,29.55,4.09,18.0,22.43,19.0,1.0,44.75],["9",3.77,457.1,90.47,30.62,-1.44,17.0,17.48,24.0,4.0,19.19],["10",2.65,337.09,194.96,28.93,-3.47,12.0,23.81,20.0,2.0,76.62],["11",2.54,212.01,18.65,29.86,-2.71,16.0,43.79,20.0,3.0,33.89],["12",2.1,90.22,313.81,30.12,-1.31,10.0,30.51,13.0,1.0,39.94],["13",1.48,4188.55,226.2,30.51,-2.59,15.0,41.1,18.0,1.0,155.74],["14",0.84,597.35,169.43,30.71,-2.2,22.0,23.84,19.0,1.0,56.81],["15",4.4,667.01,3006.24,28.88,-0.72,17.0,30.56,19.0,16.0,44.18],["16",11.66,980.71,111.2,28.47,-2.4,16.0,22.43,21.0,188.0,29.88],["17",4.59,240.18,87.17,31.28,8.45,14.0,22.83,20.0,2.0,10.66],["18",0.3,590.1,143.5,30.33,-3.8,22.0,60.14,21.0,4.0,28.22],["19",7.3,693.06,157.25,29.25,2.87,14.0,18.61,23.0,1.0,15.84],["20",11.04,124.8,96.3,31.55,1.16,20.0,33.22,24.0,1.0,97.71],["21",5.82,226.35,120.26,30.12,9.74,16.0,15.36,22.0,1.0,44.6],["22",12.48,153.55,105.87,31.18,-3.32,7.0,58.96,27.0,1.0,74.76],["23",4.72,156.79,15.14,30.07,0.97,19.0,13.6,12.0,1.0,19.94],["24",1.03,13.63,120.98,32.06,9.54,13.0,14.53,17.0,5.0,16.9],["25",3.04,117.62,72.48,31.76,7.98,15.0,46.96,11.0,2.0,53.03],["26",4.35,240.92,579.12,29.75,7.26,13.0,34.71,21.0,6.0,15.27],["27",0.75,1.04,205.78,30.97,-1.13,18.0,22.44,25.0,153.0,23.27],["28",7.84,68.84,171.29,30.65,-2.44,11.0,38.07,17.0,1.0,100.76],["29",2.16,216.73,2051.89,31.37,5.03,10.0,25.27,26.0,1.0,24.04],["30",1.35,523.4,848.54,29.04,8.94,15.0,19.18,14.0,22.0,8.49],["31",1.82,49.59,1478.04,30.69,3.35,21.0,21.78,26.0,1.0,5.41],["32",0.43,133.94,330.58,31.06,3.57,16.0,54.7,18.0,1.0,7.42],["33",12.08,3451.68,35.63,28.24,-0.8,10.0,43.2,15.0,1.0,77.72],["34",3.1,461.37,123.84,28.82,6.54,15.0,33.75,20.0,167.0,21.02],["35",9.09,93.17,302.64,27.96,-2.19,8.0,28.01,17.0,1.0,152.62],["36",1.1,83.45,91.02,29.73,-0.14,11.0,20.47,18.0,2.0,91.11],["37",2.23,259.85,170.56,30.72,1.38,16.0,19.78,18.0,2.0,116.59],["38",6.58,338.26,59.45,31.5,2.61,18.0,42.01,23.0,1.0,67.38],["39",5.76,97.45,292.12,30.07,-1.36,15.0,9.46,20.0,500.0,51.09],["40",3.25,16.77,309.13,31.63,-3.28,14.0,6.83,18.0,500.0,16.36],["41",4.01,66.36,59.65,28.62,4.16,10.0,37.34,21.0,2.0,33.25],["42",2.55,167.01,155.88,28.3,-0.67,13.0,18.15,22.0,3.0,54.74],["43",4.33,16.48,1300.8,29.94,3.72,17.0,46.88,18.0,7.0,64.58],["44",7.16,18810.47,56.06,30.38,-2.68,18.0,44.18,19.0,6.0,11.69],["45",1.73,1636.95,36.47,29.97,2.22,12.0,27.31,15.0,1.0,28.58],["46",0.43,1546.19,961.14,27.93,2.99,19.0,44.17,16.0,20.0,31.24],["47",190.14,744.63,573.37,29.91,-4.22,17.0,45.15,22.0,1.0,30.29],["48",7.02,49.16,738.73,28.7,0.05,9.0,51.43,16.0,1.0,13.27],["49",32.33,242.39,20.33,30.67,-2.98,19.0,19.85,20.0,500.0,107.78],["50",7.09,654.56,469.45,30.37,-4.05,17.0,5.62,22.0,1.0,27.82],["51",4.46,560.96,100.69,29.06,9.85,11.0,1.31,15.0,2.0,14.19],["52",1.75,205.91,121.01,29.49,-0.16,11.0,44.22,21.0,10.0,109.51],["53",1.19,656.82,192.01,28.94,7.15,14.0,25.63,17.0,2.0,91.17],["54",2.17,198.64,656.51,29.94,-1.18,19.0,12.01,27.0,4.0,37.1],["55",0.58,387.12,695.32,30.96,5.22,12.0,29.07,20.0,1.0,22.69],["56",2.9,20.09,166.49,29.01,6.4,16.0,24.84,23.0,3.0,6.79],["57",6.63,100.18,168.56,30.5,3.93,16.0,27.31,20.0,2.0,48.43],["58",3.27,794.82,29.59,29.47,2.07,16.0,23.1,13.0,18.0,21.38],["59",6.11,62.42,434.32,29.21,1.18,18.0,39.78,21.0,2.0,32.63],["60",3.84,152.45,21.05,29.89,0.23,20.0,12.28,27.0,1.0,103.23],["61",1.59,9.04,30.7,28.96,8.94,14.0,24.43,21.0,17.0,20.08],["62",7.6,157.96,75.01,29.45,7.46,12.0,16.91,24.0,4.0,46.96],["63",0.79,174.49,13.44,28.8,9.48,17.0,36.3,25.0,1.0,57.28],["64",3.29,230.87,139.32,31.96,-3.14,11.0,15.94,17.0,500.0,76.11],["65",5.64,2450.72,122.62,30.04,5.96,9.0,9.8,17.0,1.0,30.81],["66",26.72,2702.76,143.46,29.3,9.08,12.0,32.59,21.0,1.0,28.35],["67",3.35,93.17,118.37,30.21,-2.28,11.0,30.65,19.0,1.0,27.82],["68",97.6,183.68,159.92,29.89,-4.0,20.0,7.67,24.0,14.0,43.75],["69",0.03,87.45,259.83,29.78,6.12,16.0,47.29,25.0,2.0,88.64],["70",2.96,76.73,110.19,30.61,3.62,14.0,31.57,18.0,22.0,26.81],["71",149.82,335.59,68.19,30.76,7.63,15.0,20.63,17.0,10.0,1.74],["72",4.41,186.52,54.09,29.47,-2.9,11.0,3.87,23.0,1.0,61.77],["73",4.26,272.31,1887.78,29.42,6.93,8.0,41.69,18.0,1.0,35.09],["74",0.62,85.15,173.04,29.72,-1.98,12.0,30.53,24.0,3.0,48.51],["75",8.27,376.5,126.67,27.7,-2.55,12.0,36.04,19.0,7.0,7.08],["76",0.38,259.73,63.78,28.48,-2.54,18.0,31.97,22.0,1.0,21.45],["77",1.46,122.86,161.55,31.37,7.22,16.0,6.04,15.0,1.0,58.33],["78",10.4,224.1,128.91,31.64,4.98,18.0,21.77,21.0,4.0,10.3],["79",0.62,769.69,185.19,29.75,2.85,16.0,42.34,19.0,1.0,46.89],["80",1.75,184.52,8.71,30.58,0.38,15.0,8.58,21.0,12.0,32.42],["81",2.3,57.76,2157.51,30.31,8.16,13.0,24.11,16.0,1.0,17.74],["82",4.72,230.66,11201.24,33.08,0.89,9.0,10.68,22.0,2.0,16.48],["83",3.29,710.22,30.42,31.12,7.25,18.0,39.4,24.0,2.0,13.38],["84",7.35,231.32,42.45,29.87,1.59,17.0,25.57,17.0,8.0,34.95],["85",0.31,156.08,130.22,29.04,0.65,12.0,38.41,15.0,1.0,38.1],["86",4.35,243.99,164.38,28.39,1.94,12.0,36.61,12.0,1.0,24.73],["87",2.13,29.7,11.07,30.2,-0.48,13.0,58.16,21.0,1.0,12.61],["88",25.61,587.58,118.62,29.24,6.21,22.0,56.22,21.0,2.0,45.92],["89",8.98,142.41,154.81,28.58,2.54,24.0,8.84,20.0,7.0,62.54],["90",8.17,1328.34,16.42,29.35,-1.52,11.0,34.46,17.0,1.0,52.01],["91",0.32,82.45,112.29,28.92,8.49,20.0,60.96,19.0,7.0,119.68],["92",4.85,80.45,84.98,31.69,0.76,19.0,31.41,21.0,1.0,28.83],["93",5.08,372.61,19.55,30.88,3.15,17.0,64.79,20.0,24.0,82.93],["94",2.39,1206.77,150.96,29.99,8.6,12.0,22.65,29.0,1.0,19.28],["95",59.87,1353.62,67.69,31.48,4.36,23.0,45.32,16.0,193.0,16.66],["96",0.1,306.02,130.3,30.08,-3.25,11.0,59.96,22.0,2.0,36.6],["97",5.96,278.87,110.35,29.14,9.1,21.0,13.62,19.0,3.0,95.34],["98",2.06,320.42,69.82,31.52,4.42,17.0,23.61,19.0,308.0,26.35],["99",5.26,269.79,130.54,30.54,0.02,23.0,60.47,22.0,1.0,7.07]]
+/*p_data]*/
+            let currentDataType = 1;
+            let chart = null;
+
+            // Initialize dropdown
+            function initializeDropdown() {
+                const select = document.getElementById("dataTypeSelect");
+                select.innerHTML = "";
+
+                for (let i = 1; i < columnNames.length; i++) {
+                    const option = document.createElement("option");
+                    option.value = i;
+                    option.textContent = LongColNames[i] || columnNames[i];
+                    select.appendChild(option);
+                }
+
+                if (select.options.length > 0) {
+                    select.value = currentDataType;
+                }
+            }
+
+            // Helper functions
+            function getValue(dataRow, columnIndex) {
+                return dataRow[columnIndex];
+            }
+
+
+
+            function getCategoryName(dataRow) {
+                if (isNumeric(dataRow[0])) {
+                    return 'row_' + String(dataRow[0]);
+                } else {
+                    return String(dataRow[0]); // or dataRow[0].toString()
+                }
+            }
+
+
+            // Process data
+            function processData(data, columnIndex) {
+                const sortedData = [...data].sort(
+                    (a, b) => getValue(b, columnIndex) - getValue(a, columnIndex),
+                );
+                const total = sortedData.reduce(
+                    (sum, item) => sum + getValue(item, columnIndex),
+                    0,
+                );
+                let cumulative = 0;
+
+                const processedData = sortedData.map((item) => {
+                    const value = getValue(item, columnIndex);
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    cumulative += value;
+
+                    const processedItem = {
+                        category: getCategoryName(item),
+                        value: value,
+                        percentage,
+                        cumulativePercentage: ((cumulative / total) * 100).toFixed(1),
+                    };
+
+                    for (let i = 0; i < columnNames.length; i++) {
+                        processedItem[columnNames[i]] = getValue(item, i);
+                    }
+
+                    return processedItem;
+                }); //.reverse();
+
+                return {
+                    processedData,
+                    total,
+                    sortedData,
+                };
+            }
+
+            // Calculate 80% intercept
+            function calculate80Intercept(sortedData, total, columnIndex) {
+                let cumulativeSum = 0;
+                let result = {
+                    categoriesFor80Percent: 0,
+                    exactPercentageAt80: 0,
+                    percentOfEntries: 0,
+                };
+
+                sortedData.some((item, i) => {
+                    cumulativeSum += getValue(item, columnIndex);
+                    if (
+                        (cumulativeSum / total) * 100 >= 80 &&
+                        !result.categoriesFor80Percent
+                    ) {
+                        result = {
+                            categoriesFor80Percent: i + 1,
+                            exactPercentageAt80: ((cumulativeSum / total) * 100).toFixed(1),
+                            percentOfEntries: (((i + 1) / sortedData.length) * 100).toFixed(
+                                1,
+                            ),
+                        };
+                        return true;
+                    }
+                });
+                return result;
+            }
+
+            // Get templates
+            function getHoverTemplate(columnIndex) {
+                return hoverTemplates[columnIndex] || hoverTemplates[1];
+            }
+
+            function getXAxisTitle(columnIndex) {
+                return xAxisTitles[columnIndex] || xAxisTitles[1];
+            }
+
+            function getBarName(columnIndex) {
+                return LongColNames[columnIndex] || LongColNames[1];
+            }
+
+            function formatValue(value, columnIndex) {
+                return HumanReadable(value, 2);
+            }
+
+            function calculateSmartTickStep(dataLength, maxTicks = 20) {
+                return Math.ceil(dataLength / maxTicks);
+            }
+
+            // Update chart
+            function updateChart(dataset) {
+                const {
+                    processedData,
+                    total,
+                    sortedData
+                } = processData(
+                    dataset,
+                    currentDataType,
+                );
+                const {
+                    percentOfEntries,
+                    exactPercentageAt80,
+                    categoriesFor80Percent,
+                } = calculate80Intercept(sortedData, total, currentDataType);
+
+                // const interceptYPosition = processedData[processedData.length - categoriesFor80Percent]?.category;
+                const interceptYPosition =
+                    processedData[categoriesFor80Percent - 1]?.category;
+
+                document.getElementById("currentDataType").textContent =
+                    getBarName(currentDataType);
+
+                const categoryLabels = processedData.map((item) => item.category);
+                const tickStep = calculateSmartTickStep(categoryLabels.length, 50); // 20 = max allowed labels
+
+                const tickvals = categoryLabels
+                    .map((_, i) => i)
+                    .filter((i) => i === 0 || i % tickStep === 0);
+                const ticktext = tickvals.map((i) => categoryLabels[i]);
+
+                const plotlyData = [{
+                        x: processedData.map((item) => item.value),
+                        y: processedData.map((item) => item.category),
+                        type: "bar",
+                        orientation: "h",
+                        marker: {
+                            color: config.colors.bar
+                        },
+                        name: getBarName(currentDataType),
+                        hoverinfo: "text",
+                        hovertext: processedData.map((item) => {
+                            let template = getHoverTemplate(currentDataType);
+                            template = template.replace(
+                                "{category}",
+                                `<b>${item.category}</b>`,
+                            );
+                            template = template.replace("{percentage}", item.percentage);
+                            template = template.replace(
+                                "{value}",
+                                formatValue(item.value, currentDataType),
+                            );
+                            return template;
+                        }),
+                    },
+                    {
+                        x: processedData.map((item) =>
+                            parseFloat(item.cumulativePercentage),
+                        ),
+                        y: processedData.map((item) => item.category),
+                        type: "scatter",
+                        mode: "lines+markers",
+                        xaxis: "x2",
+                        line: {
+                            color: config.colors.line,
+                            width: 2
+                        },
+                        marker: {
+                            size: 4
+                        },
+                        name: config.text.lineName,
+                        hoverinfo: "text",
+                        hovertext: processedData.map((item) =>
+                            config.text.hoverLine
+                            .replace("{category}", `<b>${item.category}</b>`)
+                            .replace("{cumulative}", item.cumulativePercentage),
+                        ),
+                    },
+                    {
+                        x: new Array(processedData.length).fill(80),
+                        y: processedData.map((item) => item.category),
+                        type: "scatter",
+                        mode: "lines",
+                        xaxis: "x2",
+                        line: {
+                            color: config.colors.threshold,
+                            dash: "dash",
+                            width: 2
+                        },
+                        name: config.text.thresholdName,
+                        hoverinfo: "none",
+                        showlegend: true,
+                    },
+                ];
+
+                if (interceptYPosition) {
+                    plotlyData.push({
+                        x: [0, 100],
+                        y: [interceptYPosition, interceptYPosition],
+                        type: "scatter",
+                        mode: "lines",
+                        xaxis: "x2",
+                        line: {
+                            color: config.colors.horizontal80,
+                            dash: "dot",
+                            width: 2,
+                        },
+                        name: config.text.interceptName.replace(
+                            "{percent}",
+                            percentOfEntries,
+                        ),
+                        hoverinfo: "text",
+                        hovertext: config.text.interceptHover
+                            .replace("{categories}", categoriesFor80Percent)
+                            .replace("{percent}", percentOfEntries)
+                            .replace("{exactPercent}", exactPercentageAt80),
+                    });
+                }
+
+                const layout = {
+                    title: {
+                        text: config.text.title,
+                        x: 0.2,
+                        y: 0.99,
+                        xanchor: "center",
+                        font: {
+                            size: 16
+                        },
+                    },
+                    xaxis: {
+                        title: {
+                            text: getXAxisTitle(currentDataType),
+                            font: {
+                                size: 12
+                            },
+                        },
+                        side: "bottom",
+                        tickfont: {
+                            size: 10
+                        },
+                        domain: [0, 1],
+                        showgrid: false,
+                        zeroline: false,
+                        automargin: true,
+                        tickformat: ",.0f",
+                    },
+                    xaxis2: {
+                        title: {
+                            text: config.text.secondaryXAxis,
+                            font: {
+                                size: 12
+                            }
+                        },
+                        overlaying: "x",
+                        side: "top",
+                        domain: [0, 1],
+                        range: [0, 100],
+                        tickfont: {
+                            size: 10
+                        },
+                        showgrid: true,
+                        gridcolor: "#e8e8e8",
+                        zeroline: false,
+                        automargin: true,
+                    },
+                    yaxis: {
+                        title: {
+                            text: config.text.yAxis,
+                            font: {
+                                size: 12
+                            }
+                        },
+                        tickfont: {
+                            size: 9
+                        },
+                        categoryorder: "array",
+                        categoryarray: processedData.map((item) => item.category),
+                        showline: true,
+                        linecolor: "#e8e8e8",
+                        automargin: true,
+//~                         autorange: 'reversed',
+                        // tickmode: 'array',
+                        // tickvals: tickvals,
+                        // ticktext: ticktext,
+                        range: [processedData.length * 1, -0.5],
+                    },
+                    legend: {
+                        orientation: "h",
+                        y: 0,
+                        x: 0.5,
+                        xanchor: "center",
+                        font: {
+                            size: 11
+                        },
+                    },
+                    margin: config.layout.margins,
+                    height: config.layout.height,
+                    hovermode: "y unified",
+                    plot_bgcolor: "white",
+                    paper_bgcolor: "white",
+                    bargap: 0.1,
+                    hoverlabel: {
+                        bgcolor: config.colors.tooltipBg,
+                        bordercolor: config.colors.tooltipBorder,
+                        font: {
+                            size: 12
+                        },
+                    },
+                    annotations: interceptYPosition ? [{
+                            x: 80,
+                            y: interceptYPosition,
+                            xref: "x2",
+                            yref: "y",
+                            text: config.text.interceptAnnotation.replace(
+                                "{percent}",
+                                percentOfEntries,
+                            ),
+                            showarrow: true,
+                            arrowhead: 2,
+                            arrowcolor: config.colors.horizontal80,
+                            ax: -40,
+                            ay: 40,
+                            font: {
+                                size: 10,
+                                color: config.colors.horizontal80
+                            },
+                            bgcolor: "rgba(255,255,255,0.9)",
+                            bordercolor: config.colors.horizontal80,
+                            borderwidth: 1,
+                        },
+                        {
+                            text: `Number of data points: ${processedData.length}`,
+                            xref: "paper",
+                            yref: "paper",
+                            x: 0,
+                            y: 1.03,
+                            showarrow: false,
+                            font: {
+                                size: 12,
+                                color: "black",
+                            },
+                            align: "right",
+                        },
+                    ] : [],
+                };
+
+                const plotlyConfig = {
+                    responsive: true,
+                    displayModeBar: true,
+                    modeBarButtonsToAdd: ["select2d", "lasso2d"],
+                    modeBarButtonsToRemove: ["pan2d"],
+                    displaylogo: false,
+                };
+
+                if (chart) {
+                    Plotly.react(
+                        "visualizationChart",
+                        plotlyData,
+                        layout,
+                        plotlyConfig,
+                    );
+                } else {
+                    chart = Plotly.newPlot(
+                        "visualizationChart",
+                        plotlyData,
+                        layout,
+                        plotlyConfig,
+                    );
+                }
+            }
+
+            function getCurrentDataset() {
+                return defaultData;
+            }
+
+            // Initialize
+            document.addEventListener("DOMContentLoaded", function() {
+                initializeDropdown();
+
+                document
+                    .getElementById("dataTypeSelect")
+                    .addEventListener("change", function() {
+                        currentDataType = parseInt(this.value);
+                        updateChart(getCurrentDataset(null));
+                    });
+
+                // Initial load with default dataset
+                updateChart(getCurrentDataset(0));
+            });
+
+            // Expose update function
+            window.updateParetoChart = function(dataset) {
+                updateChart(dataset || getCurrentDataset(null));
+            };
+        })();
+    </script>
+ <!--min_content]-->
+</body>
+
+</html>
