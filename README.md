@@ -2,6 +2,14 @@
 
 `interpareto` is a Python utility for creating interactive Pareto charts from `pandas.DataFrame` objects. It generates standalone HTML files with dynamic visualizations using [Plotly.js](https://plotly.com/javascript/)—viewable in any browser without Jupyter notebooks, servers, or frameworks.
 
+## Quick start
+```python
+import pandas as pd
+import interpareto as ipar
+sample_df = ipar.generate_pareto_data(100)
+ipar.render(sample_df, title="Sample Data Analysis")
+```
+
 ### Ideal for analyzing:
 
 - Positive numeric values (sales, defects, costs)
@@ -24,7 +32,7 @@
 - Works independently of web servers—viewable offline in any browser
 - **Minimal HTML snippet generation**: Generate embeddable HTML content for Flask or other web frameworks
 
-## Quick Start
+## Basic usage
 
 ```python
 import pandas as pd
