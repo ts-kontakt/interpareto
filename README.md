@@ -14,6 +14,16 @@ Example that uses well known movie dataset.
 
 ![Movies dataset](https://github.com/ts-kontakt/interpareto/blob/main/interpareto_movies.gif?raw=true)
 
+📌  **Note**
+
+**InterPareto doesn’t use Plotly for Python or any server to run.**
+Instead, it generates standalone HTML files with embedded interactive charts using Plotly.js (JavaScript).
+No server, Jupyter, or browser rendering engine is required at runtime.
+
+This design allows charts to be:
+- Viewed offline in any modern web browser
+- You can still embed them into web apps if you want
+
 ## Quick start
 ```python
 import pandas as pd
@@ -21,14 +31,14 @@ import interpareto as ipar
 sample_df = ipar.generate_pareto_data(100)
 ipar.render(sample_df, title="Sample Data Analysis")
 ```
+
 Of course, not all datasets are suitable for this kind of analysis — but many are.
 ### Ideal for analyzing:
-
 - Positive numeric values (sales, defects, costs)
 - Skewed distributions (few large, many small values)
 - Categorical data with measurable impact
 - Data w- here the 80/20 principle may apply
-- 
+ 
 ### Avoid using with:
 - Normally distributed data
 - Data with many zero/negative values
