@@ -243,25 +243,13 @@ The generated Pareto chart includes:
 4. **Intersection annotation**: Shows where cumulative line crosses 80%
 5. **Dynamic controls**: Dropdown to switch between different data columns
 
-## Customization Examples
+### Customization Examples
 
-### Basic Usage
+📌  **Note**
+Currently, modifying chart colors or settings is possible by editing the built-in HTML/JS template or by using a custom template.
 
-```python
-import pandas as pd
-import interpareto as ipar
+Note that the goal of this module is not to replicate  functionality of Plotly for Python when it comes to customization.
 
-# Simple example
-df = pd.DataFrame({
-    "Product": ["A", "B", "C", "D"],
-    "Sales": [100, 80, 60, 40],
-    "Profit": [30, 25, 15, 10]
-})
-
-# Generate chart
-ipar.render(df, title="Sales Analysis", to_file="sales_pareto.html")
-```
-### Advanced Usage
 
 ```python
 # Use custom template
