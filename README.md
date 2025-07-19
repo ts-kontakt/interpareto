@@ -2,6 +2,18 @@
 
 `interpareto` is a Python utility for creating interactive Pareto charts from `pandas.DataFrame` objects. It generates standalone HTML files with dynamic visualizations using [Plotly.js](https://plotly.com/javascript/)—viewable in any browser without Jupyter notebooks, servers, or frameworks.
 
+
+There are many tutorials on how to create a Pareto chart in different tools, but with `interpareto.py` it can be as simple as:
+```python
+import interpareto
+interpareto.render(your_dataframe)
+```
+The result is an **interactive char**t, where you can switch the data column used in the plot.
+
+Example that uses well known movie dataset.
+
+![Movies dataset](https://github.com/ts-kontakt/interpareto/blob/main/interpareto_movies.gif?raw=true)
+
 ## Quick start
 ```python
 import pandas as pd
@@ -9,14 +21,14 @@ import interpareto as ipar
 sample_df = ipar.generate_pareto_data(100)
 ipar.render(sample_df, title="Sample Data Analysis")
 ```
-
+Of course, not all datasets are suitable for this kind of analysis — but many are.
 ### Ideal for analyzing:
 
 - Positive numeric values (sales, defects, costs)
 - Skewed distributions (few large, many small values)
 - Categorical data with measurable impact
 - Data w- here the 80/20 principle may apply
-
+- 
 ### Avoid using with:
 - Normally distributed data
 - Data with many zero/negative values
@@ -25,7 +37,6 @@ ipar.render(sample_df, title="Sample Data Analysis")
 ## Features
 - Converts `pandas.DataFrame` to interactive standalone HTML Pareto charts
 - **Dynamic column selection**: Switch between different data columns in real-time
-- **80/20 rule visualization**: Automatic calculation and annotation of the 80% threshold
 - **Smart data processing**: Automatically detects and removes index-like columns
 - **Data cleaning**: Handles NaN values, negatives, and zeros with detailed reporting
 - Self-contained HTML files with embedded data—no external dependencies at runtime
@@ -36,23 +47,26 @@ ipar.render(sample_df, title="Sample Data Analysis")
 
 ```python
 import pandas as pd
+
 import interpareto as ipar
 
-# Create sample data
+# Simple example with 15 data points
 df = pd.DataFrame({
-    "Category": ["A", "B", "C", "D", "E"],
-    "Revenue": [50000, 30000, 15000, 3000, 2000],
-    "Customers": [100, 80, 40, 20, 10]
+    "Product": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"],
+    "Sales": [5000, 3200, 2800, 2100, 1900, 1500, 1200, 900, 750, 650, 500, 400, 300, 200, 150],
+    "Profit": [1200, 800, 333, 222, 40, 111, 100, 90, 12, 60, 60, 55, 45, 12, 2]
 })
 
-# Generate interactive Pareto chart
-ipar.render(
-    df,
-    title="Revenue Analysis",
-    to_file="pareto_chart.html",
-    startfile=True
-)
+# Generate chart
+ipar.render(df, title="Sales Analysis", to_file="sales_pareto.html")
 ```
+Pareto analysis is based on the Pareto Principle (80/20 rule), which states that roughly 80% of effects come from 20% of causes. InterPareto automatically:
+
+- **Sorts data**: Orders values from highest to lowest
+- **Calculates cumulative percentages**: Shows running totals as percentage of whole
+- **Identifies the 80% threshold**: Highlights where 80% of total value is reached
+- **Annotates key insights**: Shows what percentage of categories contribute to 80% of value
+
 
 ## Main Functions
 
@@ -124,6 +138,7 @@ InterPareto automatically processes your data to ensure optimal visualization:
 - **Numeric column selection**: Automatically selects the first 10 numeric columns
 - **Missing value handling**: Removes rows with NaN values
 - **Negative and zero filtering**: Excludes rows with negative values or zeros (configurable)
+
 
 ### Processing Warnings
 
@@ -208,23 +223,9 @@ if __name__ == "__main__":
     app.run(debug=True)
 ```
 
-**Key points for web framework integration:**
-
-- **Required dependency**: Always include Plotly.js in your host page
-- **Self-contained data**: The `render_inline()` function includes all chart data and initialization code
-- **Interactive features**: Full column switching and hover functionality preserved
-- **Responsive design**: Charts automatically adapt to container size
-
 ## Understanding Pareto Analysis
 
-### The 80/20 Rule
 
-Pareto analysis is based on the Pareto Principle (80/20 rule), which states that roughly 80% of effects come from 20% of causes. InterPareto automatically:
-
-- **Sorts data**: Orders values from highest to lowest
-- **Calculates cumulative percentages**: Shows running totals as percentage of whole
-- **Identifies the 80% threshold**: Highlights where 80% of total value is reached
-- **Annotates key insights**: Shows what percentage of categories contribute to 80% of value
 
 ### Chart Components
 
@@ -284,22 +285,11 @@ ipar.render(sample_df, title="Sample Data Analysis")
 - Python 3.7+
 - pandas
 - numpy
-
-## Technical Details
-
-### Data Processing Pipeline
-
-1. **Column Detection**: Identifies and removes index-like columns
-2. **Duplicate Handling**: Removes duplicate indices
-3. **Numeric Selection**: Selects first 10 numeric columns
-4. **Data Cleaning**: Removes NaN, negative, and zero values
-5. **Pareto Calculation**: Sorts data and calculates cumulative percentages
-
+  
 ### Chart Features
 
 - **Interactive tooltips**: Hover for detailed information
 - **Column switching**: Real-time data column selection
-- **Responsive design**: Adapts to different screen sizes
 - **Export options**: Built-in Plotly export functionality
 - **Zoom and pan**: Interactive chart exploration
 
