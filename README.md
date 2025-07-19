@@ -24,6 +24,9 @@ This design allows charts to be:
 - Viewed offline in any modern web browser
 - You can still embed them into web apps if you want
 
+### Installation
+```pip install interpareto```
+
 ## Quick start
 ```python
 import pandas as pd
