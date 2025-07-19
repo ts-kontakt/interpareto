@@ -2,13 +2,7 @@
 
 `interpareto` is a Python utility for creating interactive Pareto charts from `pandas.DataFrame` objects. It generates standalone HTML files with dynamic visualizations using [Plotly.js](https://plotly.com/javascript/)—viewable in any browser without Jupyter notebooks, servers, or frameworks.
 
-
-There are many tutorials on how to create a Pareto chart in different tools, but with `interpareto.py` it can be as simple as:
-```python
-import interpareto
-interpareto.render(your_dataframe)
-```
-The result is an **interactive char**t, where you can switch the data column used in the plot.
+The result is an **interactive chart**, where the data column used in the plot can be switched.
 
 Example that uses well known movie dataset.
 
@@ -20,9 +14,12 @@ Example that uses well known movie dataset.
 Instead, it generates standalone HTML files with embedded interactive charts using Plotly.js (JavaScript).
 No server, Jupyter, or browser rendering engine is required at runtime.
 
+
+[Live example](https://www.stockmap.pl/pareto_example.html)
+
 This design allows charts to be:
-- Viewed offline in any modern web browser
-- You can still embed them into web apps if you want
+- Viewed offline in any modern web browser,
+- Embedded into web apps if needed.
 
 ### Installation
 ```pip install interpareto```
@@ -140,8 +137,6 @@ Generates sample data following various statistical distributions for testing an
 **Returns:**
 - DataFrame with sample data including Pareto, normal, uniform, and other distributions
 
-## Data Processing Features
-
 ### Automatic Data Cleaning
 
 InterPareto automatically processes your data to ensure optimal visualization:
@@ -238,8 +233,6 @@ if __name__ == "__main__":
 
 ## Understanding Pareto Analysis
 
-
-
 ### Chart Components
 
 The generated Pareto chart includes:
@@ -268,18 +261,9 @@ df = pd.DataFrame({
 # Generate chart
 ipar.render(df, title="Sales Analysis", to_file="sales_pareto.html")
 ```
-
 ### Advanced Usage
 
 ```python
-# Disable warnings for clean output
-html_content = ipar.render(
-    df,
-    title="Custom Pareto Analysis",
-    warnings=False,
-    to_file=None  # Return HTML string
-)
-
 # Use custom template
 ipar.render(
     df,
@@ -317,16 +301,6 @@ Dashboard Title
 
 const data = /*[p_data*/ [...] /*p_data]*/;
 ```
-## Error Handling
-
-The module includes  error handling for:
-- **Data validation**: Ensures numeric columns are available
-- **Missing values**: Graceful handling of NaN and missing data
-- **Column compatibility**: Validates data types and formats
-- **Template loading**: Fallback options for missing templates
-
-
-
 
 MIT License  
 © Tomasz Sługocki
