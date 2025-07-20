@@ -1,6 +1,6 @@
 # InterPareto: Pandas DataFrames to Interactive Pareto Analysis
 
-`interpareto` is a Python utility for creating interactive Pareto charts from `pandas.DataFrame` objects. It generates standalone HTML files with dynamic visualizations using [Plotly.js](https://plotly.com/javascript/)—viewable in any browser without Jupyter notebooks, servers, or frameworks.
+`interpareto` is a Python utility for easy creating interactive Pareto charts from `pandas.DataFrame` objects. It generates standalone HTML files with dynamic visualizations using [Plotly.js](https://plotly.com/javascript/)—viewable in any browser without Jupyter notebooks, servers, or frameworks.
 
 The result is an **interactive chart**, where the data column used in the plot can be switched.
 
